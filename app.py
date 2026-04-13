@@ -9,23 +9,15 @@ from PIL import Image
 import pytesseract
 import fitz  # PyMuPDF
 
-# Optional (for better OCR accuracy)
 import numpy as np
 import cv2
 
 app = Flask(__name__)
 
-# ─────────────────────────────────────────────
-# CONFIG
-# ─────────────────────────────────────────────
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp', 'tiff', 'pdf', 'webp'}
 
-
-# ─────────────────────────────────────────────
-# UTILITIES
-# ─────────────────────────────────────────────
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -35,7 +27,7 @@ def pdf_to_images(pdf_bytes):
     images = []
 
     for page in doc:
-        pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))  # balance quality & speed
+        pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))  
         img = Image.open(io.BytesIO(pix.tobytes("png")))
         images.append(img)
 
@@ -59,10 +51,6 @@ def extract_text_tesseract(image):
     )
     return text
 
-
-# ─────────────────────────────────────────────
-# INVOICE EXTRACTION (basic)
-# ─────────────────────────────────────────────
 def extract_invoice_fields(text):
     data = {}
 
@@ -83,11 +71,6 @@ def extract_invoice_fields(text):
     data["line_items"] = lines[:20]
 
     return data
-
-
-# ─────────────────────────────────────────────
-# ROUTES
-# ─────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
 def home():
@@ -164,9 +147,6 @@ def ocr():
         }), 500
 
 
-# ─────────────────────────────────────────────
-# RUN APP (Render compatible)
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
 
