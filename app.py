@@ -86,67 +86,46 @@ def health():
         "pytesseract": True
     }
 
-
-@app.route("/ocr", methods=["POST"])
+@app.route('/ocr', methods=['POST'])
 def ocr():
     try:
-        # -------------------------
-        # Case 1: file upload
-        # -------------------------
-        if "file" in request.files:
-            file = request.files["file"]
-            filename = file.filename
+        data = request.get_json()
 
-            if not allowed_file(filename):
-                return jsonify({"error": "Invalid file type"}), 400
+        filename = data.get("filename")
+        file_base64 = data.get("file")
 
-            file_bytes = file.read()
+        if not file_base64:
+            return jsonify({"error": "No file received"}), 400
 
-        # -------------------------
-        # Case 2: base64 (Power Automate)
-        # -------------------------
-        else:
-            data = request.json
-            filename = data.get("filename", "file.pdf")
-            file_bytes = base64.b64decode(data["file"])
+        file_bytes = base64.b64decode(file_base64)
 
-        ext = filename.rsplit(".", 1)[1].lower()
+        results = []
 
-        # -------------------------
-        # Convert to images
-        # -------------------------
-        if ext == "pdf":
+        # ✅ HANDLE PDF
+        if filename.lower().endswith(".pdf"):
             images = pdf_to_images(file_bytes)
+
+            for img in images:
+                text, conf = extract_text_tesseract(img)
+                results.append(text)
+
+            final_text = "\n\n".join(results)
+
         else:
-            images = [Image.open(io.BytesIO(file_bytes)).convert("RGB")]
+            from PIL import Image
+            import io
 
-        # -------------------------
-        # OCR PROCESS
-        # -------------------------
-        full_text = ""
-
-        for img in images:
-            text = extract_text(img)
-            full_text += text + "\n"
-
-        # -------------------------
-        # EXTRACT INVOICE FIELDS
-        # -------------------------
-        structured = extract_invoice_fields(full_text)
+            img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+            final_text, conf = extract_text_tesseract(img)
 
         return jsonify({
             "success": True,
             "filename": filename,
-            "text": full_text,
-            "structured_data": structured
+            "text": final_text
         })
 
     except Exception as e:
-        traceback.print_exc()
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify({"error": str(e)}), 500
 
 
 # ─────────────────────────────────────────────
