@@ -2,3 +2,6 @@ flask
 pytesseract
 pillow
 PyMuPDF
+gunicorn
+numpy
+opencv-python-headless
