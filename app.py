@@ -108,7 +108,12 @@ def health():
     }
 
 
-@app.route('/ocr', methods=['POST'])
+@app.route('/ocr', methods=['GET', 'POST'])
+def ocr():
+    if request.method == 'GET':
+        return {
+            "message": "OCR endpoint working. Use POST request."
+        }
 def ocr():
     try:
         data = request.get_json()
